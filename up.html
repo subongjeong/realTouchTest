@@ -5,11 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>오른팔 드래그 인터랙션</title>
     <style>
-        body {
+        html, body {
             margin: 0;
+            padding: 0;
             background: #000;
             font-family: sans-serif;
-            position: relative;
+            overflow: hidden;         /* ✅ 스크롤 자체 방지 */
+            touch-action: none;       /* ✅ 모바일 스와이프 방지 */
         }
         video {
             width: 100vw;
@@ -29,8 +31,8 @@
             position: absolute;
             width: 3vw;
             height: 45vh;
-            left: 49vw; /* 오른쪽 기준 */
-            top: 25vh;  /* 중간보다 약간 위쪽 */
+            left: 49vw;
+            top: 25vh;
             border: 0px dashed red;
             pointer-events: auto;
             z-index: 10;
@@ -90,12 +92,14 @@
     }
 
     dragZone.addEventListener('mousedown', e => {
+        e.preventDefault(); // ✅ 스크롤 방지
         isDragging = true;
         startY = e.clientY;
     });
 
     document.addEventListener('mousemove', e => {
         if (!isDragging) return;
+        e.preventDefault(); // ✅ 스크롤 방지
         if (!isInsideDragZone(e.clientX, e.clientY)) {
             isDragging = false;
             animateBackToMidpoint();
@@ -114,12 +118,14 @@
     });
 
     dragZone.addEventListener('touchstart', e => {
+        e.preventDefault(); // ✅ 스크롤 방지
         startY = e.touches[0].clientY;
         isDragging = true;
     });
 
     document.addEventListener('touchmove', e => {
         if (!isDragging) return;
+        e.preventDefault(); // ✅ 스크롤 방지
         const t = e.touches[0];
         if (!isInsideDragZone(t.clientX, t.clientY)) {
             isDragging = false;
