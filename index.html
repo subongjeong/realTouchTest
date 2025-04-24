@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GIV Drag Frame Control with Reset</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            position: relative;
+        }
+        video {
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+        }
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body>
+<video id="givVideo" muted playsinline>
+    <source src="scene1.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+</video>
+
+<div class="overlay" id="dragArea"></div>
+
+<script>
+    const video = document.getElementById('givVideo');
+    const dragArea = document.getElementById('dragArea');
+
+    let isDragging = false;
+    let startX = 0;
+    let lastX = 0;
+    const FRAME_STEP = 1 / 120; // assume 30fps
+    const MIDPOINT = 8; // assume middle of the video at 30 seconds
+
+    video.currentTime = MIDPOINT;
+    video.pause();
+
+    function seekByDrag(deltaX) {
+        const direction = deltaX > 0 ? 1 : -1;
+        const steps = Math.floor(Math.abs(deltaX));
+        video.pause();
+        video.currentTime += direction * FRAME_STEP * steps;
+        console.log(`[LOG] Drag ${direction > 0 ? '→' : '←'}, Frames: ${steps}, Time: ${video.currentTime.toFixed(3)}`);
+    }
+
+    function animateReturnToMidpoint() {
+        const stepSize = 0.03;
+        const interval = setInterval(() => {
+            const diff = MIDPOINT - video.currentTime;
+            if (Math.abs(diff) < stepSize) {
+                video.currentTime = MIDPOINT;
+                clearInterval(interval);
+                console.log(`[LOG] Returned to midpoint (${MIDPOINT}s)`);
+            } else {
+                video.currentTime += diff > 0 ? stepSize : -stepSize;
+            }
+        }, 33); // ~30fps
+    }
+
+    dragArea.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        startX = e.clientX;
+        lastX = startX;
+    });
+
+    dragArea.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const deltaX = e.clientX - lastX;
+        if (Math.abs(deltaX) >= 1) {
+            seekByDrag(deltaX);
+            lastX = e.clientX;
+        }
+    });
+
+    dragArea.addEventListener('mouseup', () => {
+        isDragging = false;
+        animateReturnToMidpoint();
+    });
+
+    dragArea.addEventListener('touchstart', (e) => {
+        isDragging = true;
+        startX = e.touches[0].clientX;
+        lastX = startX;
+    });
+
+    dragArea.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        const currentX = e.touches[0].clientX;
+        const deltaX = currentX - lastX;
+        if (Math.abs(deltaX) >= 1) {
+            seekByDrag(deltaX);
+            lastX = currentX;
+        }
+    });
+
+    dragArea.addEventListener('touchend', () => {
+        isDragging = false;
+        animateReturnToMidpoint();
+    });
+</script>
+</body>
+</html>
