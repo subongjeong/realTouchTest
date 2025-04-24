@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>오른팔 드래그 인터랙션</title>
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+            font-family: sans-serif;
+            position: relative;
+        }
+        video {
+            width: 100vw;
+            height: 100vh;
+            object-fit: contain;
+            display: block;
+        }
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+        }
+        .drag-zone {
+            position: absolute;
+            width: 3vw;
+            height: 45vh;
+            left: 49vw; /* 오른쪽 기준 */
+            top: 25vh;  /* 중간보다 약간 위쪽 */
+            border: 0px dashed red;
+            pointer-events: auto;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+<video id="video" autoplay muted playsinline>
+    <source src="arm_raise.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+</video>
+
+<div class="overlay">
+    <div class="drag-zone" id="dragZone"></div>
+</div>
+
+<script>
+    const video = document.getElementById('video');
+    const dragZone = document.getElementById('dragZone');
+
+    const VIDEO_DURATION = 5.0;
+    const MID_TIME = 2.6;
+    const MAX_DRAG = 450;
+
+    video.currentTime = MID_TIME;
+    video.pause();
+
+    let isDragging = false;
+    let startY = 0;
+
+    function mapYToTime(deltaY) {
+        const clamped = Math.min(Math.max(deltaY, -MAX_DRAG), MAX_DRAG);
+        const mapped = MID_TIME - (clamped / MAX_DRAG) * MID_TIME;
+        return Math.min(Math.max(mapped, 0), VIDEO_DURATION);
+    }
+
+    function animateBackToMidpoint() {
+        const interval = setInterval(() => {
+            const diff = MID_TIME - video.currentTime;
+            if (Math.abs(diff) < 0.08) {
+                video.currentTime = MID_TIME;
+                clearInterval(interval);
+            } else {
+                video.currentTime += diff > 0 ? 0.08 : -0.08;
+            }
+        }, 30);
+    }
+
+    function isInsideDragZone(x, y) {
+        const rect = dragZone.getBoundingClientRect();
+        return (
+            x >= rect.left &&
+            x <= rect.right &&
+            y >= rect.top &&
+            y <= rect.bottom
+        );
+    }
+
+    dragZone.addEventListener('mousedown', e => {
+        isDragging = true;
+        startY = e.clientY;
+    });
+
+    document.addEventListener('mousemove', e => {
+        if (!isDragging) return;
+        if (!isInsideDragZone(e.clientX, e.clientY)) {
+            isDragging = false;
+            animateBackToMidpoint();
+            return;
+        }
+        const deltaY = e.clientY - startY;
+        video.pause();
+        video.currentTime = mapYToTime(deltaY);
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (isDragging) {
+            isDragging = false;
+            animateBackToMidpoint();
+        }
+    });
+
+    dragZone.addEventListener('touchstart', e => {
+        startY = e.touches[0].clientY;
+        isDragging = true;
+    });
+
+    document.addEventListener('touchmove', e => {
+        if (!isDragging) return;
+        const t = e.touches[0];
+        if (!isInsideDragZone(t.clientX, t.clientY)) {
+            isDragging = false;
+            animateBackToMidpoint();
+            return;
+        }
+        const deltaY = t.clientY - startY;
+        video.pause();
+        video.currentTime = mapYToTime(deltaY);
+    });
+
+    document.addEventListener('touchend', () => {
+        if (isDragging) {
+            isDragging = false;
+            animateBackToMidpoint();
+        }
+    });
+</script>
+
+</body>
+</html>
